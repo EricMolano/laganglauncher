@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self'">
+<title>La Gang</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <div id="scene" aria-hidden="true"></div>
+
+  <header class="titlebar">
+    <span class="brand">LA GANG</span>
+    <span id="online" class="online" hidden></span>
+    <div class="window-buttons">
+      <button id="btn-min" aria-label="Minimizar"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" stroke-width="1.4"/></svg></button>
+      <button id="btn-close" aria-label="Cerrar"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4"/></svg></button>
+    </div>
+  </header>
+
+  <!-- Entrar: solo el nombre (servidores sin premium) -->
+  <form id="login" class="login" hidden>
+    <div class="login-title">
+      <h1>¿Quién eres?</h1>
+      <p>La grieta solo recuerda tu nombre.</p>
+    </div>
+    <label for="name">NOMBRE DE JUGADOR</label>
+    <input id="name" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="TuNombre">
+    <p id="login-error" class="form-error" role="alert"></p>
+    <button type="submit" class="btn-enter">ENTRAR</button>
+  </form>
+  <p id="disclaimer" class="disclaimer" hidden>No afiliado a Mojang ni a Microsoft.</p>
+
+  <main id="home" hidden>
+    <section id="hero" class="hero">
+      <span id="kicker" class="kicker"></span>
+      <h1 id="headline"></h1>
+      <p id="quote"></p>
+    </section>
+
+    <footer class="bar">
+      <div id="servers" role="group" aria-label="Servidor" class="servers"></div>
+      <button id="account" class="account" title="Cambiar de nombre">
+        <span id="avatar" class="avatar" aria-hidden="true"></span>
+        <span class="account-text">
+          <span id="username" class="account-name"></span>
+          <span class="account-sub">Sin premium</span>
+        </span>
+      </button>
+      <div class="status">
+        <span id="status" class="status-text" role="status"></span>
+        <div id="progress" class="progress" hidden><div id="progress-fill"></div></div>
+      </div>
+      <button id="btn-settings" class="icon-btn" aria-label="Ajustes">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M8 1h4v2.3l1.6.7 1.6-1.6 2.8 2.8-1.6 1.6.7 1.6H19v4h-2.3l-.7 1.6 1.6 1.6-2.8 2.8-1.6-1.6-1.6.7V19H8v-2.3l-1.6-.7-1.6 1.6L2 14.8l1.6-1.6-.7-1.6H1V7.5h2.3l.7-1.6L2.4 4.3 5.2 1.5l1.6 1.6L8 2.4zm2 6a3 3 0 100 6 3 3 0 000-6z"/></svg>
+      </button>
+      <button id="btn-play" class="btn-enter">ENTRAR</button>
+    </footer>
+  </main>
+
+  <div id="settings" class="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <div class="settings-card">
+      <h2 id="settings-title">Ajustes · <span id="settings-server"></span></h2>
+      <label for="memory">Memoria para Minecraft: <strong id="memory-value"></strong></label>
+      <input id="memory" type="range" step="512">
+      <p class="hint" id="memory-hint"></p>
+      <div class="settings-actions">
+        <button id="btn-folder" class="btn-ghost">Abrir carpeta del juego</button>
+        <button id="btn-repair" class="btn-ghost">Reparar instalación</button>
+        <button id="btn-logs" class="btn-ghost">Ver registros</button>
+      </div>
+      <div class="settings-foot">
+        <span id="app-version" class="hint"></span>
+        <button id="btn-settings-close" class="btn-small">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="enter" class="enter" aria-live="polite"></div>
+</div>
+<script src="scenes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+const path = require('path')
+const asar = require(path.join(process.cwd(), 'node_modules/@electron/asar'))
+const l = asar.listPackage('dist/win-unpacked/resources/app.asar').map((p) => p.split(path.sep).join('/'))
+for (const p of ['/src/renderer/index.html', '/src/renderer/assets/lucky-block.svg', '/node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2', '/node_modules/@fontsource/cormorant-garamond/files/cormorant-garamond-latin-600-normal.woff2', '/node_modules/@xmcl/installer/package.json', '/node_modules/undici/package.json', '/build/icon.png'])
+  console.log(l.includes(p) ? 'OK   ' : 'FALTA', p)
+console.log(l.filter((p) => p.startsWith('/test')).length, 'archivos de test')

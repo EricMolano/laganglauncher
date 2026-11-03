@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+
+# Pruebas con Helios/Nebula, descartadas
+helios/
+nebula/
+distro/
+tools/
