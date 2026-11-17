@@ -3,7 +3,7 @@ const fs = require('node:fs')
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron')
 const paths = require('./paths')
 const settings = require('./settings')
-const { offlineProfile } = require('./account')
+const accounts = require('./accounts')
 const { fetchCatalog, fetchManifest, pingServer } = require('./catalog')
 const installer = require('./installer')
 const game = require('./launch')
@@ -60,7 +60,7 @@ ipcMain.handle('app:init', async () => {
   const s = settings.load()
   return {
     version: app.getVersion(),
-    username: s.username ?? null,
+    ...accounts.state(),
     lastServer: s.lastServer ?? null,
     offline: catalog.offline,
     servers: catalog.servers.map((server) => ({
@@ -71,15 +71,11 @@ ipcMain.handle('app:init', async () => {
   }
 })
 
-ipcMain.handle('account:set', (_e, name) => {
-  const profile = offlineProfile(String(name).trim())
-  settings.save({ username: profile.name })
-  return profile.name
-})
-
-ipcMain.handle('account:clear', () => {
-  settings.save({ username: null })
-})
+// Todas devuelven la lista de cuentas actualizada (sin tokens).
+ipcMain.handle('accounts:addOffline', (_e, name) => accounts.addOffline(name))
+ipcMain.handle('accounts:addMicrosoft', () => accounts.addMicrosoft(win))
+ipcMain.handle('accounts:select', (_e, id) => accounts.select(id))
+ipcMain.handle('accounts:remove', (_e, id) => accounts.remove(id))
 
 ipcMain.handle('server:ping', (_e, id) => {
   const server = findServer(id)
@@ -114,15 +110,15 @@ ipcMain.handle('game:play', async (_e, id, { repair = false } = {}) => {
   busy = true
   const server = findServer(id)
   try {
-    const username = settings.load().username
-    const profile = offlineProfile(username ?? '')
+    send('game:progress', { stage: 'account', label: 'Comprobando la cuenta', ratio: 0 })
+    const session = await accounts.session()
     const manifest = await fetchManifest(server)
     const prepared = await installer.prepare(server, manifest, (p) => send('game:progress', p), { repair })
     settings.save({ synced: { ...settings.load().synced, [server.id]: server.version } })
     send('game:progress', { stage: 'launch', label: 'Abriendo Minecraft', ratio: 1 })
     await game.start({
       server,
-      profile,
+      ...session,
       memory: settings.memoryFor(server).value,
       prepared,
       on: (event, data) => {

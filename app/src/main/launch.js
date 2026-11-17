@@ -18,7 +18,7 @@ const JVM_FLAGS = [
 ]
 
 // Lanza Minecraft conectando directo al servidor. Los eventos se informan con `on`.
-async function start({ server, profile, memory, prepared, on }) {
+async function start({ server, profile, accessToken, userType = 'legacy', memory, prepared, on }) {
   fs.mkdirSync(paths.logs, { recursive: true })
   const log = fs.createWriteStream(path.join(paths.logs, `${server.id}.log`))
   const proc = await launch({
@@ -27,8 +27,8 @@ async function start({ server, profile, memory, prepared, on }) {
     javaPath: prepared.javaPath,
     version: prepared.versionId,
     gameProfile: profile,
-    accessToken: crypto.randomBytes(16).toString('hex'),
-    userType: 'legacy',
+    accessToken: accessToken ?? crypto.randomBytes(16).toString('hex'),
+    userType,
     minMemory: Math.min(2048, memory),
     maxMemory: memory,
     launcherName: 'La Gang',

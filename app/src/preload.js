@@ -8,8 +8,10 @@ const listen = (channel) => (cb) => {
 
 contextBridge.exposeInMainWorld('lagang', {
   init: () => ipcRenderer.invoke('app:init'),
-  setAccount: (name) => ipcRenderer.invoke('account:set', name),
-  clearAccount: () => ipcRenderer.invoke('account:clear'),
+  addOffline: (name) => ipcRenderer.invoke('accounts:addOffline', name),
+  addMicrosoft: () => ipcRenderer.invoke('accounts:addMicrosoft'),
+  selectAccount: (id) => ipcRenderer.invoke('accounts:select', id),
+  removeAccount: (id) => ipcRenderer.invoke('accounts:remove', id),
   ping: (id) => ipcRenderer.invoke('server:ping', id),
   select: (id) => ipcRenderer.invoke('server:select', id),
   setMemory: (id, mb) => ipcRenderer.invoke('server:memory', id, mb),

@@ -5,7 +5,8 @@ const VALID_NAME = /^[a-zA-Z0-9_]{3,16}$/
 const state = {
   servers: [],
   current: null,
-  username: null,
+  accounts: [],
+  activeAccount: null,
   playing: false,
   offline: false,
 }
@@ -17,21 +18,24 @@ const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.ch
 
 function applyTheme(scene) {
   const root = document.documentElement.style
-  const t = scene.theme
-  root.setProperty('--bg', t.bg)
-  root.setProperty('--accent', t.accent)
-  root.setProperty('--accent-border', t.accentBorder)
-  root.setProperty('--accent-glow', t.glow)
-  root.setProperty('--pill', t.pill)
-  root.setProperty('--kicker', t.kicker)
-  root.setProperty('--quote', t.quote)
-  $('app').style.background = t.bg
+  for (const [name, value] of Object.entries(scene.theme)) root.setProperty(`--${name}`, value)
+  $('app').style.background = scene.theme.bg
 }
 
 function renderScene(server) {
   const scene = sceneOf(server)
   applyTheme(scene)
   $('scene').innerHTML = scene.background()
+}
+
+const LOADERS = { fabric: 'Fabric', forge: 'Forge' }
+function chipsOf(server) {
+  const chips = []
+  if (server.minecraft) chips.push(`${LOADERS[server.loader?.type] ?? 'Minecraft'} ${server.minecraft}`)
+  if (server.java) chips.push(`Java ${server.java}`)
+  if (server.mods) chips.push(`${server.mods} ${server.mods === 1 ? 'mod' : 'mods'}`)
+  if (server.size) chips.push(mb(server.size))
+  return chips
 }
 
 function setStatus(text, { error = false } = {}) {
@@ -43,6 +47,8 @@ function setStatus(text, { error = false } = {}) {
 function setProgress(ratio) {
   $('progress').hidden = ratio == null
   $('progress-fill').style.width = `${Math.round((ratio ?? 0) * 100)}%`
+  // La escena reacciona al avance (la grieta se ensancha, el bloque brilla más).
+  $('app').style.setProperty('--p', ratio ?? 0)
 }
 
 function idleStatus(server) {
@@ -73,6 +79,7 @@ function selectServer(server, { animate = true } = {}) {
   $('kicker').textContent = server.kicker ?? server.tagline ?? ''
   $('headline').textContent = server.headline ?? server.name
   $('quote').textContent = server.quote ?? server.description ?? ''
+  $('chips').innerHTML = chipsOf(server).map((c) => `<span class="chip">${escape(c)}</span>`).join('')
   const hero = $('hero')
   hero.classList.remove('swap')
   if (animate) {
@@ -90,7 +97,7 @@ function selectServer(server, { animate = true } = {}) {
 
 function renderServers() {
   $('servers').innerHTML = state.servers
-    .map((s) => `<button class="pill" data-id="${escape(s.id)}" aria-pressed="false">${escape(s.name)}</button>`)
+    .map((s) => `<button class="tab" data-id="${escape(s.id)}" aria-pressed="false">${escape(s.name)}</button>`)
     .join('')
   for (const btn of $('servers').children) {
     btn.addEventListener('click', () => {
@@ -100,16 +107,75 @@ function renderServers() {
   }
 }
 
+const ACCOUNT_TYPES = { offline: 'Sin premium', microsoft: 'Microsoft' }
+const activeAccount = () => state.accounts.find((a) => a.id === state.activeAccount)
+
 function renderAccount() {
-  $('username').textContent = state.username
-  $('avatar').textContent = state.username.slice(0, 1).toUpperCase()
+  const account = activeAccount()
+  $('username').textContent = account.name
+  $('account-sub').textContent = ACCOUNT_TYPES[account.type]
+  $('avatar').textContent = account.name.slice(0, 1).toUpperCase()
+}
+
+// Aplica la lista de cuentas que devuelve el proceso principal y muestra la pantalla que toca.
+function applyAccounts(data) {
+  state.accounts = data.accounts
+  state.activeAccount = data.activeAccount
+  if (activeAccount()) showHome()
+  else {
+    closeAccounts()
+    showLogin()
+  }
+  renderAccountList()
+}
+
+function renderAccountList() {
+  $('account-list').innerHTML = state.accounts.map((a) => `<li>
+    <button class="account-row" data-id="${escape(a.id)}" aria-pressed="${a.id === state.activeAccount}">
+      <span class="avatar" aria-hidden="true">${escape(a.name.slice(0, 1).toUpperCase())}</span>
+      <span class="account-text"><span class="account-name">${escape(a.name)}</span><span class="account-sub">${ACCOUNT_TYPES[a.type]}</span></span>
+    </button>
+    <button class="icon-btn" data-remove="${escape(a.id)}" aria-label="Quitar la cuenta ${escape(a.name)}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  </li>`).join('')
+}
+
+function openAccounts() {
+  $('accounts-error').textContent = ''
+  $('new-name').value = ''
+  renderAccountList()
+  $('accounts').hidden = false
+  $('btn-accounts-close').focus()
+}
+
+function closeAccounts() {
+  if ($('accounts').hidden) return
+  $('accounts').hidden = true
+  $('account').focus()
+}
+
+// Corre un cambio de cuentas y muestra el error donde corresponda.
+async function accountAction(action, errorEl) {
+  errorEl.textContent = ''
+  try {
+    applyAccounts(await action())
+    return true
+  } catch (err) {
+    errorEl.textContent = cleanError(err)
+    return false
+  }
+}
+
+async function microsoftLogin(button, errorEl) {
+  button.disabled = true
+  await accountAction(() => api.addMicrosoft(), errorEl)
+  button.disabled = false
 }
 
 function showLogin() {
   $('home').hidden = true
   $('login').hidden = false
   $('disclaimer').hidden = false
-  $('name').value = state.username ?? ''
+  $('name').value = ''
   $('name').focus()
 }
 
@@ -131,10 +197,12 @@ function setPlaying(playing) {
 function playEnter(server) {
   const scene = sceneOf(server)
   $('enter').innerHTML = scene.enter(scene.enterMessage)
+  $('app').classList.add('open')
 }
 
 function clearEnter() {
   $('enter').innerHTML = ''
+  $('app').classList.remove('open')
 }
 
 async function play({ repair = false } = {}) {
@@ -199,6 +267,13 @@ function closeSettings() {
   $('btn-settings').focus()
 }
 
+// "Reducir animaciones" se recuerda en este equipo.
+function setCalm(on) {
+  document.documentElement.classList.toggle('calm', on)
+  $('calm').checked = on
+  localStorage.setItem('calm', on ? '1' : '')
+}
+
 function bindEvents() {
   $('btn-min').addEventListener('click', () => api.minimize())
   $('btn-close').addEventListener('click', () => api.close())
@@ -210,14 +285,33 @@ function bindEvents() {
       $('login-error').textContent = 'De 3 a 16 letras, números o guion bajo, sin espacios.'
       return
     }
-    $('login-error').textContent = ''
-    state.username = await api.setAccount(name)
-    showHome()
+    await accountAction(() => api.addOffline(name), $('login-error'))
   })
+  $('btn-ms-login').addEventListener('click', (e) => microsoftLogin(e.currentTarget, $('login-error')))
 
   $('account').addEventListener('click', () => {
-    if (!state.playing) showLogin()
+    if (!state.playing) openAccounts()
   })
+  $('btn-accounts-close').addEventListener('click', closeAccounts)
+  $('accounts').addEventListener('click', (e) => {
+    if (e.target === $('accounts')) closeAccounts()
+  })
+  $('account-list').addEventListener('click', (e) => {
+    const remove = e.target.closest('[data-remove]')
+    const row = e.target.closest('[data-id]')
+    if (remove) accountAction(() => api.removeAccount(remove.dataset.remove), $('accounts-error'))
+    else if (row) accountAction(() => api.selectAccount(row.dataset.id), $('accounts-error'))
+  })
+  $('account-add').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const name = $('new-name').value.trim()
+    if (!VALID_NAME.test(name)) {
+      $('accounts-error').textContent = 'De 3 a 16 letras, números o guion bajo, sin espacios.'
+      return
+    }
+    if (await accountAction(() => api.addOffline(name), $('accounts-error'))) $('new-name').value = ''
+  })
+  $('btn-microsoft').addEventListener('click', (e) => microsoftLogin(e.currentTarget, $('accounts-error')))
   $('btn-play').addEventListener('click', () => play())
   $('btn-settings').addEventListener('click', openSettings)
   $('btn-settings-close').addEventListener('click', closeSettings)
@@ -225,7 +319,9 @@ function bindEvents() {
     if (e.target === $('settings')) closeSettings()
   })
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$('settings').hidden) closeSettings()
+    if (e.key !== 'Escape') return
+    if (!$('settings').hidden) closeSettings()
+    else closeAccounts()
   })
 
   $('memory').addEventListener('input', (e) => {
@@ -234,6 +330,7 @@ function bindEvents() {
   $('memory').addEventListener('change', async (e) => {
     state.current.memory = await api.setMemory(state.current.id, Number(e.target.value))
   })
+  $('calm').addEventListener('change', (e) => setCalm(e.target.checked))
   $('btn-folder').addEventListener('click', () => api.openFolder(state.current.id))
   $('btn-logs').addEventListener('click', () => api.openLogs())
   $('btn-repair').addEventListener('click', () => {
@@ -244,18 +341,17 @@ function bindEvents() {
 
 async function start() {
   bindEvents()
+  setCalm(localStorage.getItem('calm') === '1')
   renderScene(null)
   try {
     const data = await api.init()
     state.servers = data.servers
-    state.username = data.username
     state.offline = data.offline
     $('app-version').textContent = `Launcher ${data.version}`
     renderServers()
     const initial = state.servers.find((s) => s.id === data.lastServer) ?? state.servers[0]
     selectServer(initial, { animate: false })
-    if (state.username) showHome()
-    else showLogin()
+    applyAccounts(data)
   } catch (err) {
     $('home').hidden = false
     setStatus(cleanError(err), { error: true })

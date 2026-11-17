@@ -10,8 +10,9 @@
     "dist": "electron-builder --win"
   },
   "dependencies": {
-    "@fontsource/cormorant-garamond": "^5.2.8",
+    "@fontsource/bebas-neue": "^5.3.0",
     "@fontsource/inter": "^5.2.8",
+    "@fontsource/pixelify-sans": "^5.3.0",
     "@xmcl/core": "2.15.1",
     "@xmcl/installer": "6.1.2",
     "undici": "^6.29.1"

@@ -20,7 +20,7 @@ app.whenReady().then(async () => {
     if (process.argv.includes('--launch')) {
       const game = require('../src/main/launch')
       const { offlineProfile } = require('../src/main/account')
-      await game.start({ server, profile: offlineProfile('LaGangTest'), memory: 3072, prepared, on: (e, d) => { console.log('EVENT', e, JSON.stringify(d || {})); if (e === 'exit') app.quit() } })
+      await game.start({ server, profile: { name: 'LaGangTest', id: offlineProfile('LaGangTest').id }, memory: 3072, prepared, on: (e, d) => { console.log('EVENT', e, JSON.stringify(d || {})); if (e === 'exit') app.quit() } })
       return
     }
   } catch (err) {
