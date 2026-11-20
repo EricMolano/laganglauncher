@@ -3,8 +3,9 @@
 
 Cada contenedor de Minecraft (imagen itzg/minecraft-server o con el puerto 25565
 expuesto) aparece en el launcher. De Docker se lee lo tecnico:
-  puerto publicado, VERSION, TYPE (FABRIC/FORGE), FABRIC_LOADER_VERSION, FORGE_VERSION,
-  MEMORY y la carpeta /data montada en el host (sus mods/ son los que baja el cliente).
+  puerto (SERVER_PORT con red host, o el publicado), VERSION, TYPE (FABRIC/FORGE) y la
+  carpeta /data montada en el host: de ahi salen la version del loader que itzg instalo
+  (.fabric-manifest.json / .forge-manifest.json) y los mods/ que baja el cliente.
 
 Lo que Docker no sabe (nombre bonito, frase, escena, mods solo de cliente) va en
 servidores.json, junto a este script, con el nombre del contenedor como clave:
@@ -54,10 +55,25 @@ def is_minecraft(info):
     return "minecraft-server" in image or "25565/tcp" in exposed
 
 
-def published_port(info):
+def server_port(info, env):
+    # Con network_mode host el puerto es SERVER_PORT; si no, el publicado para el 25565 interno.
+    if info["HostConfig"].get("NetworkMode") == "host":
+        return int(env.get("SERVER_PORT") or 25565)
     for b in (info["HostConfig"].get("PortBindings") or {}).get("25565/tcp") or []:
         if b.get("HostPort"):
             return int(b["HostPort"])
+    return None
+
+
+def installed_loader(data, kind):
+    """Version del loader que itzg instalo de verdad (cuando no se fija por variable va la ultima)."""
+    try:
+        if kind == "FABRIC":
+            return json.loads((data / ".fabric-manifest.json").read_text())["origin"]["loader"]
+        if kind == "FORGE":
+            return json.loads((data / ".forge-manifest.json").read_text())["forgeVersion"]
+    except (OSError, KeyError, ValueError, TypeError):
+        return None
     return None
 
 
@@ -76,23 +92,15 @@ def java_for(minecraft):
     return 17 if minor >= 18 else 8
 
 
-def memory_mb(value):
-    m = re.fullmatch(r"(\d+)([GgMm])?", value or "")
-    if not m:
-        return None
-    n = int(m.group(1))
-    return n * 1024 if (m.group(2) or "M").upper() == "G" else n
-
-
 def detect(info):
     """Lo que se saca del contenedor, o (None, motivo) si no alcanza para jugar."""
     env = env_of(info)
     name = info["Name"].lstrip("/")
     minecraft = env.get("VERSION")
     kind = env.get("TYPE", "VANILLA").upper()
-    port = published_port(info)
+    port = server_port(info, env)
     if not minecraft or minecraft.upper() == "LATEST" or not port:
-        return None, f"{name}: falta VERSION fija o puerto publicado"
+        return None, f"{name}: falta VERSION fija o puerto"
     server = {
         "id": re.sub(r"[^a-z0-9-]", "-", name.lower()),
         "name": name,
@@ -104,9 +112,11 @@ def detect(info):
     }
     data = data_dir(info)
     if kind == "FABRIC":
-        server["loader"] = {"type": "fabric", "version": env.get("FABRIC_LOADER_VERSION")}
+        version = installed_loader(data, kind) if data else None
+        server["loader"] = {"type": "fabric", "version": version or env.get("FABRIC_LOADER_VERSION")}
     elif kind == "FORGE":
-        server["loader"] = {"type": "forge", "version": env.get("FORGE_VERSION")}
+        version = installed_loader(data, kind) if data else None
+        server["loader"] = {"type": "forge", "version": version or env.get("FORGE_VERSION")}
     elif kind in PLUGIN_SERVERS:
         # Los plugins viven solo en el servidor: el cliente entra con Minecraft sin mods.
         data = None
@@ -114,9 +124,8 @@ def detect(info):
         return None, f"{name}: TYPE={kind} no soportado por el launcher"
     if "loader" in server and not server["loader"]["version"]:
         return None, f"{name}: TYPE={kind} sin version del loader"
-    mem = memory_mb(env.get("MEMORY") or env.get("MAX_MEMORY"))
-    if mem:
-        server["memory"] = {"min": min(mem, 4096), "recommended": mem}
+    # La memoria del contenedor es la del servidor, no la que necesita el PC del jugador.
+    server["memory"] = {"min": 2048, "recommended": 4096}
     server["sources"] = {"mods": [str(data / "mods")] if data else []}
     return server, None
 
