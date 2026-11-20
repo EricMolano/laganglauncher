@@ -51,11 +51,7 @@ function setProgress(ratio) {
   $('app').style.setProperty('--p', ratio ?? 0)
 }
 
-// maintenance viene del catálogo (grieta.sh en la VPS): el servidor está cerrado y no se deja entrar.
 function idleStatus(server) {
-  $('btn-play').disabled = state.playing || Boolean(server.maintenance)
-  $('app').classList.toggle('closed', Boolean(server.maintenance))
-  if (server.maintenance) return setStatus(server.maintenance)
   if (state.offline && server.state === 'ready') return setStatus('Sin conexión · se abrirá lo ya instalado')
   if (server.state === 'ready') return setStatus(`Todo listo · ${server.mods} ${server.mods === 1 ? 'mod' : 'mods'} al día`)
   if (server.state === 'update') return setStatus('Hay una actualización: se descargará al entrar')
@@ -193,7 +189,7 @@ function showHome() {
 
 function setPlaying(playing) {
   state.playing = playing
-  $('btn-play').disabled = playing || Boolean(state.current?.maintenance)
+  $('btn-play').disabled = playing
   $('btn-settings').disabled = playing
   $('account').disabled = playing
   for (const btn of $('servers').children) btn.disabled = playing
@@ -212,7 +208,7 @@ function clearEnter() {
 
 async function play({ repair = false } = {}) {
   const server = state.current
-  if (!server || state.playing || server.maintenance) return
+  if (!server || state.playing) return
   setPlaying(true)
   setStatus('Revisando archivos…')
   setProgress(0)

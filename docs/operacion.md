@@ -88,7 +88,8 @@ Para fijarla: `FABRIC_LOADER_VERSION` / `FORGE_VERSION` en el `docker-compose.ym
 
 ## Cerrar LA GANG ("La grieta se está abriendo…")
 
-`servidor/grieta.sh` (en la VPS: `/root/mc-setup/grieta.sh`) cierra o abre LA GANG sin reiniciar:
+`servidor/grieta.sh` (en la VPS: `/root/mc-setup/grieta.sh`) cierra o abre LA GANG sin reiniciar.
+Todo pasa en el servidor: el launcher no cambia; el jugador conecta y el servidor lo echa con el mensaje.
 
 ```bash
 /root/mc-setup/grieta.sh cerrar   # nadie entra salvo los ops (y STAFF_EXTRA)
@@ -101,7 +102,6 @@ Al cerrar:
 - Crea y activa el datapack `world/datapacks/grieta_cerrada`, que cada tick echa a cualquier jugador que no sea op
   con el mensaje "☠ La grieta se está abriendo… ☠ Aún no está lista. Vuelve pronto.".
   Funciona porque el servidor tiene `function-permission-level=4` (`kick` necesita 3).
-- Pone `maintenance` en `servidores.json` y regenera el catálogo: el launcher muestra el mensaje y apaga ENTRAR (desde la 0.2.1).
 - Cambia el MOTD de MiniMOTD (`config/MiniMOTD/main.conf`, guarda el original como `main.conf.abierto`).
   MiniMOTD para Fabric no tiene comando de recarga: **el MOTD cambia en el próximo reinicio**.
 

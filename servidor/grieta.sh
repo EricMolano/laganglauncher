@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Cierra o abre LA GANG mientras se termina el mapa ("La grieta se está abriendo…").
 #
-#   grieta.sh cerrar   echa a quien entre (salvo ops y tag grieta_staff), cambia el MOTD y el launcher
+#   grieta.sh cerrar   echa a quien entre (salvo ops y tag grieta_staff) y cambia el MOTD
+#                      (todo en el servidor: el launcher no se entera y lo echan al conectar)
 #   grieta.sh abrir    lo deja todo como antes
 #   grieta.sh estado
 #
@@ -13,8 +14,6 @@ set -euo pipefail
 DATA=/srv/minecraft/data
 PACK=$DATA/world/datapacks/grieta_cerrada
 MOTD_DIR=$DATA/config/MiniMOTD
-SETUP=/root/mc-setup
-MENSAJE='La grieta se está abriendo… Aún no está lista. Vuelve pronto.'
 
 rcon() { docker exec mc rcon-cli "$@"; }
 
@@ -54,20 +53,6 @@ open(path, "w", encoding="utf-8").write(text)
 PY
 }
 
-launcher() {
-  python3 - "$SETUP/servidores.json" "$1" "$MENSAJE" <<'PY'
-import json, sys
-path, accion, mensaje = sys.argv[1:]
-data = json.load(open(path, encoding="utf-8"))
-if accion == "cerrar":
-    data["mc"]["maintenance"] = mensaje
-else:
-    data["mc"].pop("maintenance", None)
-open(path, "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False, indent=1) + "\n")
-PY
-  python3 "$SETUP/launcher_catalog.py"
-}
-
 case "${1:-}" in
   cerrar)
     [ -f "$MOTD_DIR/main.conf.abierto" ] || cp -p "$MOTD_DIR/main.conf" "$MOTD_DIR/main.conf.abierto"
@@ -76,7 +61,6 @@ case "${1:-}" in
     rcon 'datapack enable "file/grieta_cerrada"'
     motd_cerrado
     # MiniMOTD (Fabric) no tiene comando de recarga: el MOTD cambia en el próximo reinicio.
-    launcher cerrar
     echo "LA GANG cerrada. Pueden entrar: $(staff) y quien tenga el tag grieta_staff."
     ;;
   abrir)
@@ -86,7 +70,6 @@ case "${1:-}" in
       mv "$MOTD_DIR/main.conf.abierto" "$MOTD_DIR/main.conf"
       :  # el MOTD vuelve al de siempre en el próximo reinicio
     fi
-    launcher abrir
     echo "LA GANG abierta."
     ;;
   estado)

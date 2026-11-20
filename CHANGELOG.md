@@ -1,9 +1,5 @@
 # Cambios
 
-## 0.2.1
-
-- Servidor cerrado (`maintenance` en el catálogo): la pestaña muestra el mensaje y ENTRAR queda apagado.
-
 ## 0.2.0 (2026-11-20)
 
 - **Rediseño 3D** de la interfaz (Bebas Neue y Pixelify Sans, escenas nuevas).
