@@ -63,12 +63,15 @@ El launcher guarda varias cuentas (botón de la cuenta, abajo a la izquierda) y 
 - **Sin premium**: solo un nombre. El UUID es el mismo que calcula un servidor en modo offline.
 - **Microsoft** (Minecraft original): el jugador inicia sesión en la página de Microsoft; el launcher nunca ve la contraseña. Solo se guarda el token de renovación, cifrado por Windows, en `settings.json`.
 
-### Cuenta de Microsoft: configuración (una sola vez)
+### Cuenta de Microsoft: configuración (ya hecha)
 
-1. En https://portal.azure.com → *App registrations* → *New registration*. Tipo de cuenta: **Personal Microsoft accounts only**.
-2. En *Authentication* → *Add a platform* → *Mobile and desktop applications* y marcar `https://login.microsoftonline.com/common/oauth2/nativeclient`.
-3. Copiar el *Application (client) ID* a `src/main/config.js` (`msClientId`). Para probar sin editar el archivo: variable `LAGANG_MS_CLIENT_ID`.
-4. Pedir a Mojang que apruebe la aplicación: https://aka.ms/mce-reviewappid. Hasta que la aprueben, el paso de Minecraft responde 403 y el launcher lo avisa.
+Ya está registrada (client ID en `src/main/config.js`; datos y estado en [docs/operacion.md](../docs/operacion.md#cuentas)). Para repetirla:
+
+1. Con una cuenta personal, crear la cuenta de Azure (prueba gratuita): crea el directorio propio, sin el cual Microsoft no deja registrar apps desde 2024.
+2. *Microsoft Entra ID* → *Registros de aplicaciones* → *Nuevo registro*. Tipo de cuenta: **Solo cuentas personales**.
+   URI de redirección: **Cliente público o nativo** → `https://login.microsoftonline.com/common/oauth2/nativeclient`. Sin secretos ni certificados.
+3. Copiar el *Id. de aplicación (cliente)* a `src/main/config.js` (`msClientId`). Para probar sin editar el archivo: variable `LAGANG_MS_CLIENT_ID`.
+4. Pedir a Mojang que apruebe la aplicación: https://aka.ms/mce-reviewappid (pide también el *Id. de directorio (inquilino)*). Hasta que la aprueben, el paso de Minecraft responde 403 y el launcher lo avisa.
 
 ## Notas
 
