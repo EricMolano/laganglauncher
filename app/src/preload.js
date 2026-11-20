@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('lagang', {
   play: (id, opts) => ipcRenderer.invoke('game:play', id, opts),
   onProgress: listen('game:progress'),
   onGameState: listen('game:state'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdate: listen('update:state'),
   minimize: () => ipcRenderer.send('window:minimize'),
   close: () => ipcRenderer.send('window:close'),
 })

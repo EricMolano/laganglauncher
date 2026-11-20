@@ -7,6 +7,7 @@ const accounts = require('./accounts')
 const { fetchCatalog, fetchManifest, pingServer } = require('./catalog')
 const installer = require('./installer')
 const game = require('./launch')
+const updater = require('./updater')
 
 let win
 let catalog
@@ -63,6 +64,7 @@ ipcMain.handle('app:init', async () => {
     ...accounts.state(),
     lastServer: s.lastServer ?? null,
     offline: catalog.offline,
+    update: updater.current(),
     servers: catalog.servers.map((server) => ({
       ...server,
       ...serverState(server),
@@ -139,6 +141,11 @@ ipcMain.handle('game:play', async (_e, id, { repair = false } = {}) => {
   }
 })
 
+// Con Minecraft abierto no se reinicia: la actualización queda para cuando cierre el launcher.
+ipcMain.handle('update:install', () => {
+  if (!busy) updater.install()
+})
+
 ipcMain.on('window:minimize', () => win?.minimize())
 ipcMain.on('window:close', () => win?.close())
 
@@ -149,5 +156,8 @@ app.on('second-instance', () => {
   win.focus()
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow()
+  updater.init((update) => send('update:state', update))
+})
 app.on('window-all-closed', () => app.quit())

@@ -1,13 +1,14 @@
 {
   "name": "lagang-launcher",
   "productName": "La Gang",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Launcher de La Gang",
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "release": "electron-builder --win --publish always"
   },
   "dependencies": {
     "@fontsource/bebas-neue": "^5.3.0",
@@ -15,6 +16,7 @@
     "@fontsource/pixelify-sans": "^5.3.0",
     "@xmcl/core": "2.15.1",
     "@xmcl/installer": "6.1.2",
+    "electron-updater": "^6.8.11",
     "undici": "^6.29.1"
   },
   "devDependencies": {
@@ -54,6 +56,12 @@
     },
     "directories": {
       "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "EricMolano",
+      "repo": "laganglauncher",
+      "releaseType": "release"
     }
   }
 }

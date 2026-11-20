@@ -16,16 +16,43 @@ Revisar qué quedó dentro del instalador: `node test/asar-check.js` (después d
 ## Instalador
 
 ```bash
-npm run dist    # dist/LaGang-Setup-<versión>.exe
+npm run dist    # dist/LaGang-Setup-<versión>.exe, sin publicar
 ```
 
-Se publica en `/srv/minecraft/skins/launcher/` (descarga: http://209.145.60.34:8090/launcher/LaGang-Setup.exe).
+La primera instalación se descarga de http://209.145.60.34:8090/launcher/LaGang-Setup.exe (copiar el `.exe` a `/srv/minecraft/skins/launcher/` y apuntar el enlace `LaGang-Setup.exe` a él).
+
+## Actualizaciones del launcher
+
+Desde la 0.2.0 el launcher se actualiza solo desde los *releases* de GitHub (`EricMolano/laganglauncher`, por HTTPS):
+busca al abrir y cada hora, descarga en segundo plano y muestra arriba "Versión X lista · Reiniciar".
+Si el jugador no reinicia, se instala al cerrar el launcher. Con Minecraft abierto no reinicia.
+
+Para sacar una versión:
+
+1. Subir `version` en `package.json` (los jugadores solo actualizan si es mayor).
+2. Crear un token de GitHub con permiso *Contents: read and write* sobre el repo.
+3. `GH_TOKEN=<token> npm run release`: compila y publica el release con el `.exe`, `latest.yml` y el `.blockmap`.
+4. Copiar también el `.exe` a la VPS para que la descarga directa sea la última.
+
+Sin release publicado (o sin internet) el launcher sigue normal; el error de búsqueda no se muestra.
 
 ## Servidores y mods
 
-El catálogo lo genera `catalogo/launcher_catalog.py` (copia en la VPS: `/root/mc-setup/launcher_catalog.py`).
-Para agregar un servidor o cambiar mods: editar `SERVERS`, copiarlo a la VPS y correr `python3 /root/mc-setup/launcher_catalog.py`.
-Los jugadores reciben los cambios la próxima vez que dan ENTRAR.
+El catálogo lo genera `catalogo/launcher_catalog.py` en la VPS (`/root/mc-setup/`), que **detecta los servidores de Docker**:
+cada contenedor de Minecraft (imagen `itzg/minecraft-server` o con el puerto 25565 expuesto) aparece en el launcher.
+
+- De Docker saca el puerto publicado, `VERSION`, `TYPE` (`FABRIC`, `FORGE`; `PAPER`/`SPIGOT`/`PURPUR` entran como vanilla sin mods), la versión del loader, `MEMORY` y los mods de la carpeta `/data/mods` montada.
+- Lo que Docker no sabe (nombre, frase, escena, mods solo de cliente) va en `catalogo/servidores.json`, con el nombre del contenedor como clave. Lo que esté ahí gana sobre lo detectado; `"hidden": true` oculta un contenedor.
+- Un contenedor sin `VERSION` fija o sin puerto publicado se omite, salvo que tenga entrada en `servidores.json`.
+- Los apagados salen en el catálogo con `running: false` y el launcher los muestra atenuados.
+
+Cron lo corre cada 5 minutos y solo reescribe `catalog.json` si algo cambió:
+
+```cron
+*/5 * * * * python3 /root/mc-setup/launcher_catalog.py >> /var/log/launcher_catalog.log 2>&1
+```
+
+Los jugadores reciben los cambios la próxima vez que abren el launcher o dan ENTRAR.
 
 Cada servidor elige su escena con `scene` (`gang`, `lucky`); las escenas están en `src/renderer/scenes.js`.
 

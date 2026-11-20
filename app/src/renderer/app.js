@@ -97,7 +97,8 @@ function selectServer(server, { animate = true } = {}) {
 
 function renderServers() {
   $('servers').innerHTML = state.servers
-    .map((s) => `<button class="tab" data-id="${escape(s.id)}" aria-pressed="false">${escape(s.name)}</button>`)
+    // running viene del catálogo (estado del contenedor en la VPS); los apagados se ven atenuados.
+    .map((s) => `<button class="tab${s.running === false ? ' down' : ''}" data-id="${escape(s.id)}" aria-pressed="false"${s.running === false ? ' title="Servidor apagado"' : ''}>${escape(s.name)}</button>`)
     .join('')
   for (const btn of $('servers').children) {
     btn.addEventListener('click', () => {
@@ -222,6 +223,17 @@ async function play({ repair = false } = {}) {
   }
 }
 
+// Aviso de actualización del launcher: se descarga sola y se instala al reiniciar o al cerrar.
+function renderUpdate(update) {
+  const btn = $('btn-update')
+  btn.hidden = !update || update.state === 'idle'
+  btn.disabled = update?.state !== 'ready'
+  if (update?.state === 'downloading') btn.textContent = `Descargando versión ${update.version} · ${update.percent ?? 0}%`
+  else if (update?.state === 'ready') btn.textContent = `Versión ${update.version} lista · Reiniciar`
+}
+
+api.onUpdate(renderUpdate)
+
 // Electron antepone "Error invoking remote method ..." a los errores del proceso principal.
 const cleanError = (err) => String(err?.message ?? err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
 
@@ -277,6 +289,9 @@ function setCalm(on) {
 function bindEvents() {
   $('btn-min').addEventListener('click', () => api.minimize())
   $('btn-close').addEventListener('click', () => api.close())
+  $('btn-update').addEventListener('click', () => {
+    if (!state.playing) api.installUpdate()
+  })
 
   $('login').addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -348,7 +363,9 @@ async function start() {
     state.servers = data.servers
     state.offline = data.offline
     $('app-version').textContent = `Launcher ${data.version}`
+    renderUpdate(data.update)
     renderServers()
+    if (!state.servers.length) throw new Error('No hay servidores disponibles en este momento.')
     const initial = state.servers.find((s) => s.id === data.lastServer) ?? state.servers[0]
     selectServer(initial, { animate: false })
     applyAccounts(data)
