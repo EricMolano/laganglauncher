@@ -86,6 +86,28 @@ El 2026-11-20, tras reiniciar la VPS, LA GANG pasó de Fabric 0.19.5 a 0.20.1.
 Como el catálogo lee la versión instalada, el launcher sigue al servidor solo; pero un cambio de loader puede romper mods.
 Para fijarla: `FABRIC_LOADER_VERSION` / `FORGE_VERSION` en el `docker-compose.yml` del servidor.
 
+## Cerrar LA GANG ("La grieta se está abriendo…")
+
+`servidor/grieta.sh` (en la VPS: `/root/mc-setup/grieta.sh`) cierra o abre LA GANG sin reiniciar:
+
+```bash
+/root/mc-setup/grieta.sh cerrar   # nadie entra salvo los ops (y STAFF_EXTRA)
+/root/mc-setup/grieta.sh abrir
+/root/mc-setup/grieta.sh estado
+```
+
+Al cerrar:
+
+- Crea y activa el datapack `world/datapacks/grieta_cerrada`, que cada tick echa a cualquier jugador que no sea op
+  con el mensaje "☠ La grieta se está abriendo… ☠ Aún no está lista. Vuelve pronto.".
+  Funciona porque el servidor tiene `function-permission-level=4` (`kick` necesita 3).
+- Pone `maintenance` en `servidores.json` y regenera el catálogo: el launcher muestra el mensaje y apaga ENTRAR (desde la 0.2.1).
+- Cambia el MOTD de MiniMOTD (`config/MiniMOTD/main.conf`, guarda el original como `main.conf.abierto`).
+  MiniMOTD para Fabric no tiene comando de recarga: **el MOTD cambia en el próximo reinicio**.
+
+Para dejar entrar a alguien que no es op: agregar su nombre a `STAFF_EXTRA` en el script y volver a correr `cerrar`.
+Cerrada desde el 2026-11-20.
+
 ## Actualizaciones del launcher
 
 Desde la 0.2.0 el launcher usa `electron-updater` con GitHub Releases (`EricMolano/laganglauncher`, por HTTPS).
