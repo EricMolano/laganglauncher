@@ -1,0 +1,34 @@
+{
+ "mc": {
+  "id": "gang",
+  "name": "La Gang · Historia",
+  "tagline": "Las Grietas · Acto 0",
+  "description": "No recuerdas cómo llegaste aquí. La grieta de amatista te arrastró hasta Meridian.",
+  "kicker": "Las Grietas · Acto 0",
+  "headline": "Despertar",
+  "quote": "No recuerdas cómo llegaste aquí.",
+  "scene": "gang",
+  "port": 25565,
+  "minecraft": "1.21.1",
+  "loader": {"type": "fabric", "version": "0.19.5"},
+  "java": 21,
+  "memory": {"min": 4096, "recommended": 8192},
+  "sources": {"mods": ["/root/modpack/jars", "/root/modpack/cliente"]}
+ },
+ "lucky": {
+  "id": "lucky",
+  "name": "Lucky Block Race",
+  "tagline": "Carreras de lucky blocks",
+  "description": "Rompe, reza y corre. Cada bloque puede salvarte o acabar contigo.",
+  "kicker": "Minijuego · Forge 1.20.1",
+  "headline": "Lucky Block Race",
+  "quote": "Rompe, corre y que la suerte decida.",
+  "scene": "lucky",
+  "port": 25566,
+  "minecraft": "1.20.1",
+  "loader": {"type": "forge", "version": "47.4.28"},
+  "java": 17,
+  "memory": {"min": 2048, "recommended": 4096},
+  "sources": {"mods": ["/srv/lucky/data/mods/lbu2-1.3-forge-1.20.1.jar"]}
+ }
+}

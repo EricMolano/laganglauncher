@@ -94,7 +94,9 @@ async function ensureGame(manifest, javaPath, progress, { repair = false } = {})
   const folder = MinecraftFolder.from(paths.shared)
   const stateFile = path.join(paths.shared, 'lagang-versions.json')
   const state = readJson(stateFile, {})
-  const key = `${manifest.minecraft}/${manifest.loader.type}/${manifest.loader.version}`
+  // Sin loader (vanilla, Paper, Spigot…) el cliente es Minecraft tal cual.
+  const loader = manifest.loader ?? { type: 'vanilla', version: manifest.minecraft }
+  const key = `${manifest.minecraft}/${loader.type}/${loader.version}`
   const known = state[key]
   if (!repair && known && fs.existsSync(folder.getVersionJson(known))) return known
 
@@ -107,7 +109,12 @@ async function ensureGame(manifest, javaPath, progress, { repair = false } = {})
     progress({ stage: 'minecraft', label: mcLabel, ratio }),
   )
 
-  const { type, version } = manifest.loader
+  const { type, version } = loader
+  if (type === 'vanilla') {
+    state[key] = manifest.minecraft
+    await writeJson(stateFile, state)
+    return manifest.minecraft
+  }
   const loaderLabel = `Instalando ${type === 'forge' ? 'Forge' : 'Fabric'} ${version}`
   progress({ stage: 'loader', label: loaderLabel, ratio: 0 })
   let versionId
